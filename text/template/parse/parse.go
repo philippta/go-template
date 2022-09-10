@@ -11,6 +11,7 @@ package parse
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
 	"runtime"
 	"strconv"
 	"strings"
@@ -410,6 +411,10 @@ func (t *Tree) action() (n Node) {
 		return t.templateControl()
 	case itemWith:
 		return t.withControl()
+	case itemSlot:
+		return t.slotControl()
+	case itemComponent:
+		return t.componentControl()
 	}
 	t.backup()
 	token := t.peek()
@@ -590,6 +595,16 @@ func (t *Tree) withControl() Node {
 	return t.newWith(t.parseControl(false, "with"))
 }
 
+// Slot:
+//
+//	{{with pipeline}} itemList {{end}}
+//	{{with pipeline}} itemList {{else}} itemList {{end}}
+//
+// If keyword is past.
+func (t *Tree) slotControl() Node {
+	return t.newSlot(t.expect(itemRightDelim, "slot").pos)
+}
+
 // End:
 //
 //	{{end}}
@@ -643,6 +658,61 @@ func (t *Tree) blockControl() Node {
 	block.stopParse()
 
 	return t.newTemplate(token.pos, token.line, name, pipe)
+}
+
+// Component:
+//
+//	{{component stringValue pipeline}}
+//
+// Component keyword is past.
+// The name must be something that can evaluate to a string.
+// The pipeline is mandatory.
+func (t *Tree) componentControl() Node {
+	const context = "component clause"
+
+	token := t.nextNonSpace()
+	name := t.parseTemplateName(token, context)
+	pipe := t.pipeline(context, itemRightDelim)
+
+	block := New("dummy")
+	block.text = t.text
+	block.Mode = t.Mode
+	block.ParseName = t.ParseName
+	block.startParse(t.funcs, t.lex, t.treeSet)
+	var end Node
+	block.Root, end = block.itemList()
+	if end.Type() != nodeEnd {
+		t.errorf("unexpected %s in %s", end, context)
+	}
+	block.stopParse()
+
+	if _, ok := t.treeSet[name]; !ok {
+		t.errorf("undefined template: %q", name)
+		return t.newTemplate(token.pos, token.line, block.Name, pipe)
+	}
+
+	parentCopy := t.treeSet[name].Copy()
+	parentCopy.Name = "component_" + strconv.Itoa(int(rand.Int63()))
+
+	var newNodes []Node
+
+	for _, node := range parentCopy.Root.Nodes {
+		switch node.(type) {
+		case *SlotNode:
+			for _, node := range block.Root.Nodes {
+				newNodes = append(newNodes, node.Copy())
+			}
+		default:
+			newNodes = append(newNodes, node.Copy())
+		}
+	}
+	parentCopy.Root.Nodes = newNodes
+
+	parentCopy.treeSet = t.treeSet
+	parentCopy.add()
+	parentCopy.treeSet = nil
+
+	return t.newTemplate(token.pos, token.line, parentCopy.Name, pipe)
 }
 
 // Template:

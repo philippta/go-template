@@ -12,7 +12,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/philippta/temply/text/template/parse"
+	"github.com/philippta/go-template/text/template/parse"
 )
 
 const (

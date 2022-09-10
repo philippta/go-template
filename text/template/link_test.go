@@ -6,11 +6,12 @@ package template_test
 
 import (
 	"bytes"
-	"github.com/philippta/temply/internal/testenv"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/philippta/go-template/internal/testenv"
 )
 
 // Issue 36021: verify that text/template doesn't prevent the linker from removing

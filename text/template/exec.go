@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/philippta/temply/internal/fmtsort"
-	"github.com/philippta/temply/text/template/parse"
+	"github.com/philippta/go-template/internal/fmtsort"
+	"github.com/philippta/go-template/text/template/parse"
 )
 
 // maxExecDepth specifies the maximum stack depth of templates within
@@ -284,6 +284,7 @@ func (s *state) walk(dot reflect.Value, node parse.Node) {
 		}
 	case *parse.WithNode:
 		s.walkIfOrWith(parse.NodeWith, dot, node.Pipe, node.List, node.ElseList)
+	case *parse.SlotNode:
 	default:
 		s.errorf("unknown node: %s", node)
 	}

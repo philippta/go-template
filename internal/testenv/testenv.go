@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/philippta/temply/internal/cfg"
+	"github.com/philippta/go-template/internal/cfg"
 )
 
 // Builder reports the name of the builder running this test

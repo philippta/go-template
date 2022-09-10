@@ -1816,3 +1816,19 @@ func TestIssue48215(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSlot(t *testing.T) {
+	tmpl, err := New("").Parse(`
+		{{define "comp"}}Hello {{slot}}! (comp: {{.}}){{end}}
+		{{component "comp" .}}World (slot: {{.}}){{end}}
+	`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	tmpl.Execute(&buf, "pipe-val")
+
+	got := buf.String()
+	t.Log(got)
+}

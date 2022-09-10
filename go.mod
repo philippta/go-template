@@ -1,3 +1,3 @@
-module github.com/philippta/temply
+module github.com/philippta/go-template
 
 go 1.18

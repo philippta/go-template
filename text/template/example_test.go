@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/philippta/temply/text/template"
+	"github.com/philippta/go-template/text/template"
 )
 
 func ExampleTemplate() {

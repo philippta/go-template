@@ -60,34 +60,38 @@ const (
 	itemText       // plain text
 	itemVariable   // variable starting with '$', such as '$' or  '$1' or '$hello'
 	// Keywords appear after all the rest.
-	itemKeyword  // used only to delimit the keywords
-	itemBlock    // block keyword
-	itemBreak    // break keyword
-	itemContinue // continue keyword
-	itemDot      // the cursor, spelled '.'
-	itemDefine   // define keyword
-	itemElse     // else keyword
-	itemEnd      // end keyword
-	itemIf       // if keyword
-	itemNil      // the untyped nil constant, easiest to treat as a keyword
-	itemRange    // range keyword
-	itemTemplate // template keyword
-	itemWith     // with keyword
+	itemKeyword   // used only to delimit the keywords
+	itemBlock     // block keyword
+	itemBreak     // break keyword
+	itemContinue  // continue keyword
+	itemDot       // the cursor, spelled '.'
+	itemDefine    // define keyword
+	itemElse      // else keyword
+	itemEnd       // end keyword
+	itemIf        // if keyword
+	itemNil       // the untyped nil constant, easiest to treat as a keyword
+	itemRange     // range keyword
+	itemTemplate  // template keyword
+	itemWith      // with keyword
+	itemSlot      // slot keyword
+	itemComponent // component keyword
 )
 
 var key = map[string]itemType{
-	".":        itemDot,
-	"block":    itemBlock,
-	"break":    itemBreak,
-	"continue": itemContinue,
-	"define":   itemDefine,
-	"else":     itemElse,
-	"end":      itemEnd,
-	"if":       itemIf,
-	"range":    itemRange,
-	"nil":      itemNil,
-	"template": itemTemplate,
-	"with":     itemWith,
+	".":         itemDot,
+	"block":     itemBlock,
+	"break":     itemBreak,
+	"continue":  itemContinue,
+	"define":    itemDefine,
+	"else":      itemElse,
+	"end":       itemEnd,
+	"if":        itemIf,
+	"range":     itemRange,
+	"nil":       itemNil,
+	"template":  itemTemplate,
+	"with":      itemWith,
+	"slot":      itemSlot,
+	"component": itemComponent,
 }
 
 const eof = -1

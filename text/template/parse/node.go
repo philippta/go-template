@@ -73,6 +73,8 @@ const (
 	NodeComment                    // A comment.
 	NodeBreak                      // A break action.
 	NodeContinue                   // A continue action.
+	NodeSlot                       // A slot action.
+	NodeComponent                  // A component action.
 )
 
 // Nodes.
@@ -1005,4 +1007,47 @@ func (t *TemplateNode) tree() *Tree {
 
 func (t *TemplateNode) Copy() Node {
 	return t.tr.newTemplate(t.Pos, t.Line, t.Name, t.Pipe.CopyPipe())
+}
+
+// SlotNode represents a {{slot}} action.
+type SlotNode struct {
+	tr *Tree
+	NodeType
+	Pos
+}
+
+func (t *Tree) newSlot(pos Pos) *SlotNode {
+	return &SlotNode{tr: t, NodeType: NodeSlot, Pos: pos}
+}
+
+func (s *SlotNode) Copy() Node                  { return s.tr.newSlot(s.Pos) }
+func (s *SlotNode) String() string              { return "{{slot}}" }
+func (s *SlotNode) tree() *Tree                 { return s.tr }
+func (s *SlotNode) writeTo(sb *strings.Builder) { sb.WriteString("{{slot}}") }
+
+// ComponentNode represents a {{component "foo" .}} action.
+type ComponentNode struct {
+	tr *Tree
+	NodeType
+	Pos
+	Pipe *PipeNode // The command to evaluate as dot for the template.
+	Name string    // The name of the template (unquoted).
+}
+
+func (t *Tree) newComponent(pos Pos, name string, pipe *PipeNode) *ComponentNode {
+	return &ComponentNode{tr: t, NodeType: NodeComponent, Pos: pos, Pipe: pipe}
+}
+
+func (c *ComponentNode) Copy() Node     { return c.tr.newSlot(c.Pos) }
+func (c *ComponentNode) String() string { return "{{component }}" }
+func (c *ComponentNode) tree() *Tree    { return c.tr }
+
+func (c *ComponentNode) writeTo(sb *strings.Builder) {
+	sb.WriteString("{{component ")
+	sb.WriteString(strconv.Quote(c.Name))
+	if c.Pipe != nil {
+		sb.WriteByte(' ')
+		c.Pipe.writeTo(sb)
+	}
+	sb.WriteString("}}")
 }
