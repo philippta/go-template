@@ -36,6 +36,7 @@ type state struct {
 	tmpl  *Template
 	wr    io.Writer
 	node  parse.Node // current node, for errors
+	slot  parse.Node
 	vars  []variable // push-down stack of variable values.
 	depth int        // the height of the stack of executing templates.
 }
@@ -285,6 +286,10 @@ func (s *state) walk(dot reflect.Value, node parse.Node) {
 	case *parse.WithNode:
 		s.walkIfOrWith(parse.NodeWith, dot, node.Pipe, node.List, node.ElseList)
 	case *parse.SlotNode:
+		// No op
+		s.walk(dot, s.slot)
+	case *parse.ComponentNode:
+		s.walkComponent(dot, node)
 	default:
 		s.errorf("unknown node: %s", node)
 	}
@@ -439,6 +444,31 @@ func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 	// No dynamic scoping: template invocations inherit no variables.
 	newState.vars = []variable{{"$", dot}}
 	newState.walk(dot, tmpl.Root)
+}
+
+func (s *state) walkComponent(dot reflect.Value, t *parse.ComponentNode) {
+	s.at(t)
+	tmpl := s.tmpl.Lookup(t.Name)
+	if tmpl == nil {
+		s.errorf("template %q not defined", t.Name)
+	}
+	parentTmpl := s.tmpl.Lookup(t.ParentName)
+	if parentTmpl == nil {
+		s.errorf("template %q not defined", t.Name)
+	}
+	if s.depth == maxExecDepth {
+		s.errorf("exceeded maximum template depth (%v)", maxExecDepth)
+	}
+
+	// Variables declared by the pipeline persist.
+	dot = s.evalPipeline(dot, t.Pipe)
+	newState := *s
+	newState.depth++
+	newState.tmpl = parentTmpl
+	newState.slot = tmpl.Root
+	// No dynamic scoping: template invocations inherit no variables.
+	newState.vars = []variable{{"$", dot}}
+	newState.walk(dot, parentTmpl.Root)
 }
 
 // Eval functions evaluate pipelines, commands, and their elements and extract

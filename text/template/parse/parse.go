@@ -597,10 +597,9 @@ func (t *Tree) withControl() Node {
 
 // Slot:
 //
-//	{{with pipeline}} itemList {{end}}
-//	{{with pipeline}} itemList {{else}} itemList {{end}}
+//	{{slot}}
 //
-// If keyword is past.
+// slot keyword is past.
 func (t *Tree) slotControl() Node {
 	return t.newSlot(t.expect(itemRightDelim, "slot").pos)
 }
@@ -671,10 +670,11 @@ func (t *Tree) componentControl() Node {
 	const context = "component clause"
 
 	token := t.nextNonSpace()
-	name := t.parseTemplateName(token, context)
+	parentName := t.parseTemplateName(token, context)
 	pipe := t.pipeline(context, itemRightDelim)
+	name := "component_" + strconv.Itoa(int(rand.Int63()))
 
-	block := New("dummy")
+	block := New(name)
 	block.text = t.text
 	block.Mode = t.Mode
 	block.ParseName = t.ParseName
@@ -684,35 +684,10 @@ func (t *Tree) componentControl() Node {
 	if end.Type() != nodeEnd {
 		t.errorf("unexpected %s in %s", end, context)
 	}
+	block.add()
 	block.stopParse()
 
-	if _, ok := t.treeSet[name]; !ok {
-		t.errorf("undefined template: %q", name)
-		return t.newTemplate(token.pos, token.line, block.Name, pipe)
-	}
-
-	parentCopy := t.treeSet[name].Copy()
-	parentCopy.Name = "component_" + strconv.Itoa(int(rand.Int63()))
-
-	var newNodes []Node
-
-	for _, node := range parentCopy.Root.Nodes {
-		switch node.(type) {
-		case *SlotNode:
-			for _, node := range block.Root.Nodes {
-				newNodes = append(newNodes, node.Copy())
-			}
-		default:
-			newNodes = append(newNodes, node.Copy())
-		}
-	}
-	parentCopy.Root.Nodes = newNodes
-
-	parentCopy.treeSet = t.treeSet
-	parentCopy.add()
-	parentCopy.treeSet = nil
-
-	return t.newTemplate(token.pos, token.line, parentCopy.Name, pipe)
+	return t.newComponent(token.pos, token.line, name, parentName, pipe)
 }
 
 // Template:

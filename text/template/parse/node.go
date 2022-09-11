@@ -1025,29 +1025,41 @@ func (s *SlotNode) String() string              { return "{{slot}}" }
 func (s *SlotNode) tree() *Tree                 { return s.tr }
 func (s *SlotNode) writeTo(sb *strings.Builder) { sb.WriteString("{{slot}}") }
 
-// ComponentNode represents a {{component "foo" .}} action.
+// ComponentNode represents a {{template}} action.
 type ComponentNode struct {
-	tr *Tree
 	NodeType
 	Pos
-	Pipe *PipeNode // The command to evaluate as dot for the template.
-	Name string    // The name of the template (unquoted).
+	tr         *Tree
+	Line       int       // The line number in the input. Deprecated: Kept for compatibility.
+	Name       string    // The name of the template (unquoted).
+	ParentName string    // The name of the parent template (unquoted).
+	Pipe       *PipeNode // The command to evaluate as dot for the template.
 }
 
-func (t *Tree) newComponent(pos Pos, name string, pipe *PipeNode) *ComponentNode {
-	return &ComponentNode{tr: t, NodeType: NodeComponent, Pos: pos, Pipe: pipe}
+func (t *Tree) newComponent(pos Pos, line int, name, parentName string, pipe *PipeNode) *ComponentNode {
+	return &ComponentNode{tr: t, NodeType: NodeTemplate, Pos: pos, Line: line, Name: name, ParentName: parentName, Pipe: pipe}
 }
 
-func (c *ComponentNode) Copy() Node     { return c.tr.newSlot(c.Pos) }
-func (c *ComponentNode) String() string { return "{{component }}" }
-func (c *ComponentNode) tree() *Tree    { return c.tr }
+func (t *ComponentNode) String() string {
+	var sb strings.Builder
+	t.writeTo(&sb)
+	return sb.String()
+}
 
-func (c *ComponentNode) writeTo(sb *strings.Builder) {
-	sb.WriteString("{{component ")
-	sb.WriteString(strconv.Quote(c.Name))
-	if c.Pipe != nil {
+func (t *ComponentNode) writeTo(sb *strings.Builder) {
+	sb.WriteString("{{template ")
+	sb.WriteString(strconv.Quote(t.Name))
+	if t.Pipe != nil {
 		sb.WriteByte(' ')
-		c.Pipe.writeTo(sb)
+		t.Pipe.writeTo(sb)
 	}
 	sb.WriteString("}}")
+}
+
+func (t *ComponentNode) tree() *Tree {
+	return t.tr
+}
+
+func (t *ComponentNode) Copy() Node {
+	return t.tr.newComponent(t.Pos, t.Line, t.Name, t.ParentName, t.Pipe.CopyPipe())
 }
