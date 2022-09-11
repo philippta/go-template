@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    {{component "navbar" .}}
+    {{component "navbar-link" (props "URL" "/home" "Active" true)}}Home{{end}}
+    {{component "navbar-link" (props "URL" "/about" "Active" false)}}About{{end}}
+    {{end}}
+
+    {{component "card" (props
+    "Image" "/images/card.jpg"
+    "Link" "/somewhere"
+    "LinkText" "Go Somewhere"
+    )}}
+    <h1>Hello World</h1>
+    {{end}}
+</body>
+
+</html>

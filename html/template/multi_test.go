@@ -11,7 +11,8 @@ import (
 	"bytes"
 	"os"
 	"testing"
-	"text/template/parse"
+
+	"github.com/philippta/go-template/text/template/parse"
 )
 
 var multiExecTests = []execTest{

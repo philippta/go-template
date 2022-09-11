@@ -1,0 +1,19 @@
+{{define "card"}}
+<div class="card">
+    {{with .Image}}
+    <div class="card-image">
+        <img src="{{.}}" />
+    </div>
+    {{end}}
+
+    <div class="card-body">
+        {{slot}}
+    </div>
+
+    {{if .Link}}
+    <div class="card-link">
+        <a href="{{.Link}}">{{.LinkText}}</a>
+    </div>
+    {{end}}
+</div>
+{{end}}

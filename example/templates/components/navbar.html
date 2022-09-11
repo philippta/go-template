@@ -1,0 +1,13 @@
+{{define "navbar"}}
+<nav class="navbar">
+    <ol>
+        {{slot}}
+    </ol>
+</nav>
+{{end}}
+
+{{define "navbar-link"}}
+<li class="navbar-link {{if .Active}}active{{end}}">
+    <a href="{{.URL}}">{{slot}}</a>
+</li>
+{{end}}

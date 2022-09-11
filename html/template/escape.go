@@ -9,8 +9,9 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"text/template"
-	"text/template/parse"
+
+	"github.com/philippta/go-template/text/template"
+	"github.com/philippta/go-template/text/template/parse"
 )
 
 // escapeTemplate rewrites the named template, which must be
@@ -94,9 +95,10 @@ type escaper struct {
 	// xxxNodeEdits are the accumulated edits to apply during commit.
 	// Such edits are not applied immediately in case a template set
 	// executes a given template in different escaping contexts.
-	actionNodeEdits   map[*parse.ActionNode][]string
-	templateNodeEdits map[*parse.TemplateNode]string
-	textNodeEdits     map[*parse.TextNode][]byte
+	actionNodeEdits    map[*parse.ActionNode][]string
+	templateNodeEdits  map[*parse.TemplateNode]string
+	componentNodeEdits map[*parse.ComponentNode]string
+	textNodeEdits      map[*parse.TextNode][]byte
 	// rangeContext holds context about the current range loop.
 	rangeContext *rangeContext
 }
@@ -117,6 +119,7 @@ func makeEscaper(n *nameSpace) escaper {
 		map[string]bool{},
 		map[*parse.ActionNode][]string{},
 		map[*parse.TemplateNode]string{},
+		map[*parse.ComponentNode]string{},
 		map[*parse.TextNode][]byte{},
 		nil,
 	}
@@ -156,6 +159,8 @@ func (e *escaper) escape(c context, n parse.Node) context {
 		return e.escapeText(c, n)
 	case *parse.WithNode:
 		return e.escapeBranch(c, &n.BranchNode, "with")
+	case *parse.ComponentNode:
+		return e.escapeComponent(c, n)
 	}
 	panic("escaping " + n.String() + " is unimplemented")
 }
@@ -601,6 +606,9 @@ func (e *escaper) escapeListConditionally(c context, n *parse.ListNode, filter f
 		for k, v := range e1.templateNodeEdits {
 			e.editTemplateNode(k, v)
 		}
+		for k, v := range e1.componentNodeEdits {
+			e.editComponentNode(k, v)
+		}
 		for k, v := range e1.textNodeEdits {
 			e.editTextNode(k, v)
 		}
@@ -613,6 +621,15 @@ func (e *escaper) escapeTemplate(c context, n *parse.TemplateNode) context {
 	c, name := e.escapeTree(c, n, n.Name, n.Line)
 	if name != n.Name {
 		e.editTemplateNode(n, name)
+	}
+	return c
+}
+
+// escapeTemplate escapes a {{component}} call node.
+func (e *escaper) escapeComponent(c context, n *parse.ComponentNode) context {
+	c, name := e.escapeTree(c, n, n.Name, n.Line)
+	if name != n.Name {
+		e.editComponentNode(n, name)
 	}
 	return c
 }
@@ -866,6 +883,14 @@ func (e *escaper) editTemplateNode(n *parse.TemplateNode, callee string) {
 	e.templateNodeEdits[n] = callee
 }
 
+// editTemplateNode records a change to a {{template}} callee for later commit.
+func (e *escaper) editComponentNode(n *parse.ComponentNode, callee string) {
+	if _, ok := e.componentNodeEdits[n]; ok {
+		panic(fmt.Sprintf("node %s shared between templates", n))
+	}
+	e.componentNodeEdits[n] = callee
+}
+
 // editTextNode records a change to a text node for later commit.
 func (e *escaper) editTextNode(n *parse.TextNode, text []byte) {
 	if _, ok := e.textNodeEdits[n]; ok {
@@ -894,6 +919,9 @@ func (e *escaper) commit() {
 	for n, name := range e.templateNodeEdits {
 		n.Name = name
 	}
+	for n, name := range e.componentNodeEdits {
+		n.Name = name
+	}
 	for n, s := range e.textNodeEdits {
 		n.Text = s
 	}
@@ -902,6 +930,7 @@ func (e *escaper) commit() {
 	e.called = make(map[string]bool)
 	e.actionNodeEdits = make(map[*parse.ActionNode][]string)
 	e.templateNodeEdits = make(map[*parse.TemplateNode]string)
+	e.componentNodeEdits = make(map[*parse.ComponentNode]string)
 	e.textNodeEdits = make(map[*parse.TextNode][]byte)
 }
 
